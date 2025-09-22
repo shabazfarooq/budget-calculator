@@ -1,0 +1,1195 @@
+<apex:page applyBodyTag="false"
+  applyHtmlTag="false"
+  showHeader="false"
+  sidebar="false"
+  lightningStylesheets="false"
+  standardStylesheets="false"
+  controller="BudgetAppController"
+  docType="html-5.0">
+
+
+  <!-- TODO:
+    
+    - Add error handling for if active does not exist (controller side)
+    - add html input validation
+    - do styling
+    - enhance datamodel
+    - compute subtotals
+    - add loader during ajax transactions
+    - should use one table so all the columns are aligned (google if another way)
+    - on datamodel create a field that says name required or not
+    - bug with Dates not being the same between retrieving from SFDC and display and editing
+    - new expense default time is wrong
+    - Subtotal row color danger/warn/green based on delta to budget
+    - highlight last expense
+    - fix the way the loader is being hidden... cant rely on timeout lol
+
+  -->
+
+
+
+  <html data-bs-theme="dark">
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+      <!-- Include Vue.js -->
+      <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+      <!-- Include Bootstrap -->
+      
+      <!--
+      
+             <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js">
+      </script>
+      <link rel="stylesheet" 
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css">
+      </link>
+
+      -->
+      
+      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" 
+        rel="stylesheet"
+        integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+        crossorigin="anonymous"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+        crossorigin="anonymous">
+      </script>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"/>
+    </head>
+  </html>
+
+  <body xmlns:v-on="http://fake.org/fake" xmlns:v-bind="http://fake.org/fake">
+
+    <div id="app">
+      <!--
+      
+        LOADER
+      
+      -->
+      <div class="modal fade" 
+          id="spinnerModal"
+          aria-hidden="true"
+          aria-labelledby="spinnerModalLabel"
+          tabindex="-1"
+          data-bs-backdrop="static"
+          data-bs-keyboard="false">
+
+        <div class="modal-dialog modal-dialog-centered">
+          
+          <button id="loaderModalOpenBtn"
+            data-bs-target="#spinnerModal"
+            data-bs-toggle="modal"
+            style="display:none">
+          </button>
+
+          <button id="loaderModalCloseBtn"
+            type="button"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+            style="display:none"
+            >
+          </button>
+
+          <div class="modal-content" style="background:none; border: none;">
+            <div class="d-flex justify-content-center">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    <!--
+      
+       NAV BAR
+
+    -->
+     <nav class="navbar fixed-top navbar-custom">
+       <!-- Title Area -->
+       <span v-if="activeExpenseReport" class="navbar-brand">{{ activeExpenseReport.Name }}</span>
+      
+       <button type="button"
+           id="navbar-btn"
+           class="btn btn-link"
+           data-bs-toggle="collapse"
+           data-bs-target="#navbarCollapse"
+           aria-controls="navbarCollapse"
+           aria-expanded="false"
+           aria-label="Toggle navigation">
+         <span class="navbar-toggler-icon"></span>
+       </button>
+      
+      
+       <!-- Expanded Area -->
+       <div class="collapse navbar-collapse" id="navbarCollapse">
+      
+         <div class="accordion accordion-flush" id="accordionExample">
+      
+           <!-- Monthly Expenses -->
+           <div v-for="(folder, folderIndex) in onloadModel.expenseReportFolders" class="accordion-item bg-transparent">
+             <h2 class="accordion-header">
+               <button type="button"
+                   class="accordion-button bg-transparent"
+                   data-bs-toggle="collapse"
+                   v-bind:data-bs-target="'#collapse' + folderIndex"
+                   aria-expanded="true"
+                   v-bind:aria-controls="'collapse' + folderIndex">
+                 {{ folder.Name }}
+               </button>
+             </h2>
+             <div v-bind:id="'collapse' + folderIndex" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+               <div class="accordion-body">
+                 <div v-for="expenseReport in folder.Expense_Reports__r">
+                   <button type="button"
+                       class="btn btn-link"
+                       v-on:click="selectReportOnChange(expenseReport.Id)"
+                       v-bind:disabled="expenseReport.Id == activeExpenseReport.Id">
+                     {{ expenseReport.Name }}
+                   </button>
+                 </div>
+               </div>
+             </div>
+           </div>
+      
+           <!-- Create new report -->
+           <div class="accordion-item bg-transparent">
+             <h2 class="accordion-header">
+               <button type="button"
+                   class="accordion-button bg-transparent"
+                   data-bs-toggle="collapse"
+                   v-bind:data-bs-target="'#collapseSettings'"
+                   aria-expanded="true"
+                   v-bind:aria-controls="'collapseSettings'">
+                 Settings
+               </button>
+             </h2>
+             <div v-bind:id="'collapseSettings'" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+               <div class="accordion-body">
+                 <div>
+                   <button type="button"
+                       class="btn btn-link"
+                       v-on:click="createNewReport()"
+                       data-bs-toggle="modal"
+                       data-bs-target="#createNewReportModal">
+                     Create New Report
+                   </button>
+                 </div>
+               </div>
+             </div>
+           </div>
+      
+      
+         </div>
+
+       </div>
+     </nav>
+
+
+      <!-- PAGE TITLE -->
+      <!-- <select v-model="onloadModel.activeExpenseReportId" class="form-select page-title">
+        <option v-for="expenseReport in onloadModel.expenseReports" v-bind:value="expenseReport.Id || ''">
+          {{ expenseReport.Name }}
+        </option>
+      </select> -->
+
+
+      <!-- 
+      
+      EXPENSES TABLE
+      
+      -->
+      <table v-for="(category, categoryIndex) in onloadModel.expensesByCategories"
+          class="table table-sm table-borderless table-hover caption-top mx-auto expenses-table">
+        <caption>
+          <button type="button"
+              class="btn btn-dark float-end align-bottom"
+              v-on:click="newExpenseOnclick(category.Id)"
+              data-bs-toggle="modal"
+              data-bs-target="#expenseModal">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">
+              <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"/>
+            </svg>
+          </button>
+        </caption>
+        <thead>
+          <tr data-bs-toggle="modal"
+              data-bs-target="#categoryModal"
+              v-on:click="editCategoryOnclick(category)">
+            <th scope="col" style="width: 51%;" v-bind:style="{color: getTitleStyle(categoryIndex)}">{{ category.Name }}</th>
+            <th scope="col" style="width: 23%">Date</th>
+            <th scope="col" style="width: 26%" class="text-end">{{ getFormattedCurrency(category.Budget__c) }}</th>
+          </tr>
+        </thead>
+
+        <tbody class="align-middle">
+          <tr v-for="expense in category.Expenses__r" 
+              data-bs-toggle="modal"
+              data-bs-target="#expenseModal"
+              v-on:click="viewExpenseOnclick(expense)">
+            <th scope="row">
+              <span v-if="expense.Category__r.Fixed_Bill__c">
+                <i class="bi bi-check-square-fill text-success" v-if="expense.Fixed_Bill_Paid__c"></i>
+                <i class="bi bi-x-square-fill text-danger" v-if="!expense.Fixed_Bill_Paid__c"></i>
+              </span>
+              {{ expense.Name }}
+            </th>
+            <td>{{ getFormattedDatetime(expense.Datetime__c) }}</td>
+            <td class="text-end">{{ getFormattedCurrency(expense.Amount__c) }}</td>
+          </tr>
+        </tbody>
+
+        <tfoot>
+          <tr v-if="category.Expenses__r">
+            <th scope="row" colspan="2">Subtotal</th>
+            <td class="text-end">{{ getCategorySubtotal(category) }}</td>
+          </tr>
+          <tr v-else="category.Expenses__r">
+            <th scope="row" colspan="3" style="background-color: inherit; font-weight: 100;">No expenses yet...</th>
+          </tr>
+        </tfoot>
+
+      </table>
+
+
+
+      <!-- Totals Table -->
+      <table class="table table-sm table-borderless table-hover caption-top mx-auto totals-table">
+        <tbody class="align-middle">
+          <!-- Income -->
+          <tr v-if="!activeExpenseReport.Hide_Income__c">
+            <td>Income</td>
+            <td class="text-end">{{ getFormattedCurrency(totalIncome) }}</td>
+          </tr>
+
+          <!-- Line Break -->
+          <tr v-if="!activeExpenseReport.Hide_Income__c">
+            <td colspan="2" class="line-break-col"><hr/></td>
+          </tr>
+
+          <!-- Actual -->
+          <tr>
+            <td class="actual-color">Actual Spend</td>
+            <td class="text-end actual-color">{{ getFormattedCurrency(spendTotal) }}</td>
+          </tr>
+          <tr v-if="!activeExpenseReport.Hide_Income__c">
+            <td class="actual-color">Actual Save</td>
+            <td class="text-end actual-color">{{ getFormattedCurrency(saveThisMonth) }}</td>
+          </tr>
+
+          <!-- Line Break -->
+          <tr v-if="!activeExpenseReport.Hide_Income__c">
+            <td colspan="2" class="line-break-col"><hr/></td>
+          </tr>
+
+          <!-- Expected -->
+          <tr>
+            <td class="expected-color">Expected Spend</td>
+            <td class="text-end expected-color">{{ getFormattedCurrency(totalSpendGoal) }}</td>
+          </tr>
+          <tr v-if="!activeExpenseReport.Hide_Income__c" style="">
+            <td class="expected-color">Expected Save</td>
+            <td class="text-end expected-color">{{ getFormattedCurrency(expectedSaveThisMonth) }}</td>
+          </tr>
+        </tbody>
+      </table>
+      
+
+
+
+
+      <!-- 
+      
+      MODAL - Expense Create/Edit
+      
+      -->
+      <form v-on:submit="saveExpenseOnSubmit()">
+        <div class="modal fade"
+            id="expenseModal"
+            tabindex="-1"
+            aria-labelledby="expenseModalLabel"
+            aria-hidden="true">
+          <div class="modal-dialog modal-fullscreen-xl-down">
+            <div class="modal-content">
+              <div class="modal-header border-bottom-0 expense-modal-header">
+                <h1 class="modal-title fs-5" id="expenseModalLabel">
+                  {{ expenseModal.title }}
+                </h1>
+                <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"
+                  id="expenseModalCloseBtn">
+                </button>
+              </div>
+              <div class="modal-body">
+                <!-- Modal Body -->
+                
+                <!-- Category -->
+                <div class="mb-5 mt-2">
+                  <label for="expenseCategory" class="form-label primary-font-color">Category</label>
+                   <select v-model="expenseModal.record.categoryId"
+                      class="form-select primary-font-color"
+                      id="expenseCategory"
+                      required="true">
+                    <option v-for="category in onloadModel.availableCategories"
+                        v-bind:value="category.Id || ''">
+                      {{ category.Name }}
+                    </option>
+                  </select>
+                </div>
+
+                <!-- Date -->
+                <div class="mb-5">
+                  <label for="expenseDatetime" class="form-label primary-font-color">Date</label>
+                  <input
+                    v-model="expenseModal.record.datetime"
+                    type="datetime-local"
+                    id="expenseDatetime"
+                    min="2018-01-01"
+                    max="2030-12-31"
+                    class="form-control primary-font-color"
+                    required="true"
+                  />
+                </div>
+
+                <!-- Name -->
+                <div class="mb-5">
+                  <label for="expenseName" class="form-label primary-font-color">Name</label>
+                  <input v-model="expenseModal.record.name"
+                    type="text"
+                    class="form-control primary-font-color"
+                    id="expenseName"
+                    required="true"/>
+                </div>
+
+                <!-- Amount -->
+                <div class="mb-5">
+                  <label for="expenseAmount" class="form-label primary-font-color">Amount</label>
+                  <div class="input-group">
+                    <button type="button"
+                      id="toggle-sign-btn"
+                      class="btn btn-outline-secondary toggle-sign-btn" 
+                      v-on:click="expenseModal.record.amount = expenseModal.record.amount ? -expenseModal.record.amount : -0">
+                      <i class="bi bi-plus-slash-minus"></i>
+                    </button>
+                    <span class="input-group-text primary-font-color" style="background-color:#212529;">$</span>
+                    <input v-model="expenseModal.record.amount"
+                      type="number"
+                      inputmode="decimal"
+                      pattern="[0-9]*"
+                      class="form-control primary-font-color"
+                      id="expenseAmount"
+                      step=".01"
+                      required="true"/>
+                  </div>
+                </div>
+
+                <!-- Fixed Bill: Paid -->
+                <div class="mb-3" v-if="expenseModal.fixedBill">
+                  <input type="radio" 
+                    class="btn-check"
+                    name="options-outlined"
+                    id="danger-outlined"
+                    autocomplete="off"
+                    v-model="expenseModal.record.fixedBillPaid"
+                    value="false"
+                  />
+                  <label for="danger-outlined"
+                    class="btn btn-outline-danger expense-modal-btn left-btn">
+                    Unpaid
+                  </label>
+                  
+                  <input type="radio" 
+                    class="btn-check"
+                    name="options-outlined"
+                    id="success-outlined"
+                    autocomplete="off"
+                    v-model="expenseModal.record.fixedBillPaid"
+                    value="true"
+                  />
+                  <label for="success-outlined"
+                    class="btn btn-outline-success expense-modal-btn right-btn">
+                    Paid
+                  </label>
+                </div>
+              </div>
+
+              
+              <!-- Modal Footer -->
+              <div class="modal-footer d-flex border-top-0">
+                <div class="me-auto p-2">
+                  <button type="button"
+                      v-if="expenseModal.showDeleteBtn"
+                      v-on:click="deleteExpenseOnclick(expenseModal.record.sfdcId)"
+                      class="btn btn-danger"
+                      id="deleteExpenseBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3" viewBox="0 0 16 16">
+                      <path d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5ZM11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H2.506a.58.58 0 0 0-.01 0H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1h-.995a.59.59 0 0 0-.01 0H11Zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5h9.916Zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47ZM8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5Z"/>
+                    </svg>
+                  </button>
+                </div>
+
+                <div class="p-2">
+                  <button type="submit"
+                      class="btn btn-primary"
+                      v-bind:class="expenseModal.submitBtnClass">
+                    {{ expenseModal.submitBtnText }}
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </form>
+
+    
+
+
+
+      <!-- 
+      
+      MODAL - Category Budget Edit
+      
+      -->
+      <form v-on:submit="editCategoryOnSubmit()">
+        <div class="modal fade"
+            id="categoryModal"
+            tabindex="-1"
+            aria-labelledby="categoryModalLabel"
+            aria-hidden="true">
+          <div class="modal-dialog modal-fullscreen-xl-down">
+            <div class="modal-content">
+              <div class="modal-header border-bottom-0 expense-modal-header">
+                <h1 class="modal-title fs-5" id="categoryModalLabel">
+                  {{ categoryModal.title }}
+                </h1>
+                <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"
+                  id="categoryModalCloseBtn">
+                </button>
+              </div>
+              <div class="modal-body">
+                <!-- Modal Body -->
+
+                <!-- Name -->
+                <div class="mb-5">
+                  <label for="categoryName" class="form-label primary-font-color">Name</label>
+                  <input v-model="categoryModal.record.name"
+                    type="text"
+                    class="form-control primary-font-color"
+                    id="categoryName"
+                    required="true"/>
+                </div>
+
+                <!-- Amount -->
+                <div class="mb-5">
+                  <label for="expenseAmount" class="form-label primary-font-color">Amount</label>
+                  <div class="input-group">
+                    <button type="button"
+                      id="toggle-sign-btn"
+                      class="btn btn-outline-secondary toggle-sign-btn" 
+                      v-on:click="categoryModal.record.budget = categoryModal.record.budget ? -categoryModal.record.budget : -0">
+                      <i class="bi bi-plus-slash-minus"></i>
+                    </button>
+                    <span class="input-group-text primary-font-color" style="background-color:#212529;">$</span>
+                    <input v-model="categoryModal.record.budget"
+                      type="number"
+                      inputmode="decimal"
+                      pattern="[0-9]*"
+                      class="form-control primary-font-color"
+                      id="expenseAmount"
+                      step=".01"
+                      required="true"/>
+                  </div>
+                </div>
+              </div>
+
+              
+              <!-- Modal Footer -->
+              <div class="modal-footer d-flex border-top-0">
+                <div class="me-auto p-2"></div>
+
+                <div class="p-2">
+                  <button type="submit" class="btn btn-primary">{{ categoryModal.submitBtnText }}</button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </form>
+
+
+    </div>
+
+
+    <script type="text/javascript">
+      const { createApp } = Vue
+
+      createApp({
+
+        data() {
+          return {
+            onloadModel: {},
+            spendTotal: 0,
+            totalIncome: 0,
+            saveThisMonth: 0,
+            expectedSaveThisMonth: 0,
+            totalSpendGoal: 0,
+            activeExpenseReport: null,
+            expenseModal: {
+              title: 'Add new expense',
+              submitBtnText: 'Save',
+              submitBtnClass: 'btn-primary',
+              showDeleteBtn: false,
+              fixedBill: false,
+              record: {
+                sfdcId: null,
+                name: null,
+                amount: null,
+                datetime: null,
+                fixedBillPaid: false,
+                categoryId: 'A'
+              }
+            },
+            categoryModal: {
+              title: 'Edit Category',
+              submitBtnText: 'Update',
+              record: {
+                sfdcId: null,
+                name: null,
+                budget: null
+              }
+            },
+          }
+        },
+
+        watch: {
+          'onloadModel.activeExpenseReportId'(newExpenseReportId, oldExpenseReportId) {
+            console.log('change');
+            console.log('oldExpenseReportId: ' + oldExpenseReportId);
+            console.log('newExpenseReportId: ' + newExpenseReportId);
+            
+            // Validate
+            if (!oldExpenseReportId || !newExpenseReportId || oldExpenseReportId == newExpenseReportId) {
+              console.log('exiting');
+              return;
+            }
+
+            this.showLoader();
+
+            // Execute remote action
+            BudgetAppController.selectExpenseReport(
+              oldExpenseReportId,
+              newExpenseReportId,
+              function(result, event) {
+                if (event.status) {
+                  this.hideLoader();
+                  // Extract result
+                  this.onloadModel = result;
+                  this.setValues();
+                  console.log(JSON.stringify(this.onloadModel));
+                }
+              }.bind(this),
+              {escape: false}
+            );
+
+          }
+        },
+
+        methods: {
+          getOnloadModel: function() {
+            // Execute remote action
+            BudgetAppController.getOnloadModel(
+              function(result, event) {
+                if (event.status) {
+                  // Extract result
+                  this.onloadModel = result;
+                  this.setValues();
+                }
+              }.bind(this),
+              {escape: false}
+            );
+          },
+
+          showLoader: function() {
+            document.getElementById('loaderModalOpenBtn').click();
+          },
+
+          hideLoader: function() {
+            setTimeout(() => {
+                document.getElementById('loaderModalCloseBtn').click();
+            }, 300);
+          },
+
+          toggleNavbar: function() {
+            document.getElementById('navbar-btn').click();
+          },
+
+          selectReportOnChange: function(expenseReportSelectedId) {
+            console.log('expenseReportSelectedId: ' + expenseReportSelectedId);
+            
+            // Hide navbar
+            this.toggleNavbar();
+
+            this.showLoader();
+
+            // Execute remote action
+            BudgetAppController.selectExpenseReport(
+              this.activeExpenseReport.Id,
+              expenseReportSelectedId,
+              function(result, event) {
+                if (event.status) {
+                  this.hideLoader();
+                  // Extract result
+                  this.onloadModel = result;
+                  this.setValues();
+                }
+              }.bind(this),
+              {escape: false}
+            );
+          },
+
+
+          viewExpenseOnclick: function(expense) {
+            console.log(JSON.stringify(expense));
+            this.expenseModal = {
+              title: 'Edit Expense',
+              submitBtnText: 'Update',
+              submitBtnClass: 'btn-warning',
+              showDeleteBtn: true,
+              fixedBill: expense.Category__r?.Fixed_Bill__c,
+              record: {
+                sfdcId: expense.Id,
+                name: expense.Name,
+                amount: expense.Amount__c,
+                datetime: this.htmlDatetimeNow(expense.Datetime__c),
+                fixedBillPaid: expense.Fixed_Bill_Paid__c,
+                categoryId: expense.Category__c
+              }
+            }
+          },
+
+          getCategoryById: function(categoryId) {
+            let availableCategories = this.onloadModel.availableCategories;
+            return availableCategories.find(cat => cat.Id === categoryId);
+          },
+
+          newExpenseOnclick: function(categoryId = '') {
+            let relatedCategory = this.getCategoryById(categoryId);
+            let defaultName = new Set(['Tolls', 'Gas']);
+
+            this.expenseModal = {
+              title: 'Add Expense',
+              submitBtnText: 'Save',
+              submitBtnClass: 'btn-primary',
+              showDeleteBtn: false,
+              fixedBill: relatedCategory.Fixed_Bill__c,
+              record: {
+                sfdcId: null,
+                name: defaultName.has(relatedCategory.Name) ? 'X' : '',
+                amount: null,
+                datetime: this.htmlDatetimeNow(),
+                fixedBillPaid: false,
+                categoryId: categoryId
+              }
+            }
+          },
+
+          htmlDatetimeNow(dt) {
+            let currentDatetime = dt ? new Date(dt) : new Date();
+            let htmlYear = currentDatetime.getFullYear();
+            let htmlMonth = this.twoDigits(currentDatetime.getMonth()+1);
+            let htmlDate = this.twoDigits(currentDatetime.getDate());
+            let htmlHour = this.twoDigits(currentDatetime.getHours());
+            let htmlMinutes = this.twoDigits(currentDatetime.getMinutes());
+            return `${htmlYear}-${htmlMonth}-${htmlDate}T${htmlHour}:${htmlMinutes}`;
+          },
+
+          twoDigits(num) {
+            return num.toLocaleString('en-US', {minimumIntegerDigits: 2, useGrouping:false});
+          },
+
+          getFormattedDatetime: function(sfdcDt) {
+            const dt = new Date(sfdcDt);
+
+            const options = {
+              month: "numeric",
+              day: "numeric"
+            };
+
+            let display = dt.toLocaleString('en-US', options);
+
+            // Remove AM/PM
+            return display.replace(/AM|PM/,'');
+          },
+
+          getFormattedCurrency: function(amount = 0.0) {
+            return  (amount).toLocaleString('en-US', {
+                style: 'currency',
+                currency: 'USD'
+            });
+          },
+
+          saveExpenseOnSubmit: function() {
+            console.log('save expense form submitted');
+
+            event.preventDefault();
+            console.log(event);
+
+            // todo: Validate parameters
+            // todo: add error handling for APEX fail
+
+            let sfdcDatetime = new Date(this.expenseModal.record.datetime).toUTCString();
+
+            this.showLoader();
+
+            // Execute remote action
+            BudgetAppController.upsertExpense(
+              this.expenseModal.record.sfdcId,
+              this.expenseModal.record.name,
+              this.expenseModal.record.categoryId,
+              this.expenseModal.record.amount,
+              this.expenseModal.record.fixedBillPaid,
+              sfdcDatetime,
+              function(result, event) {
+                if (event.status) {
+                  this.hideLoader();
+                  // Extract result
+                  this.onloadModel = result;
+                  this.setValues();
+                }
+              }.bind(this),
+              {escape: false}
+            );
+          },
+
+
+          editCategoryOnclick: function(category) {
+            console.log(JSON.stringify(category));
+
+            this.categoryModal = {
+              title: 'Edit Category',
+              submitBtnText: 'Update',
+              record: {
+                sfdcId: category.Id,
+                name: category.Name,
+                budget: category.Budget__c
+              }
+            }
+
+          },
+
+          editCategoryOnSubmit: function() {
+            console.log('update category form submitted');
+
+            event.preventDefault();
+            console.log(event);
+
+            // todo: Validate parameters
+            // todo: add error handling for APEX fail
+
+            this.showLoader();
+
+            // Execute remote action
+            BudgetAppController.upsertCategory(
+              this.categoryModal.record.sfdcId,
+              this.categoryModal.record.name,
+              this.categoryModal.record.budget,
+              function(result, event) {
+                if (event.status) {
+                  this.hideLoader();
+                  // Extract result
+                  this.onloadModel = result;
+                  this.setValues();
+                }
+              }.bind(this),
+              {escape: false}
+            );
+          },
+
+          deleteExpenseOnclick: function(sfdcId) {
+            console.log('attempting to delete ' + sfdcId);
+
+            this.showLoader();
+
+            // Execute remote action
+            BudgetAppController.deleteExpense(
+              sfdcId,
+              function(result, event) {
+                if (event.status) {
+                  this.hideLoader();
+                  // Extract result
+                  this.onloadModel = result;
+                  this.setValues();
+                }
+              }.bind(this),
+              {escape: false}
+            );
+          },
+
+          getCategorySubtotal: function(category) {
+            let total = 0;
+
+            if (category.Expenses__r) {
+              for (let i=0; i<category.Expenses__r.length; i++) {
+                total += category.Expenses__r[i].Amount__c || 0;
+              }
+            }
+
+            return this.getFormattedCurrency(total);
+          },
+
+          getTitleStyle: function(rowIndex) {
+            
+            let values = [
+              '#20d0d0',
+              '#ea5757',
+              '#21d085',
+              '#d837b8',
+              '#d8be37',
+              '#218ad0' 
+            ];
+
+            return values[rowIndex % values.length];
+          },
+
+          setValues: function() {
+            this.spendTotal = this.getSpendTotal();
+            this.totalIncome = this.getTotalIncome();
+            this.saveThisMonth = this.totalIncome - this.spendTotal;
+            this.totalSpendGoal = this.getTotalSpendGoal();
+            this.expectedSaveThisMonth = this.totalIncome - this.totalSpendGoal;
+            this.activeExpenseReport = this.getActiveExpenseReport();
+          },
+
+          getActiveExpenseReport: function() {
+            let activeExpenseReport;
+
+            if (this.onloadModel 
+                  && this.onloadModel.expenseReports 
+                  && this.onloadModel.expenseReports.length 
+                  && this.onloadModel.activeExpenseReportId) {
+              for (let i=0; i<this.onloadModel.expenseReports.length; i++) {
+                if (this.onloadModel.expenseReports[i].Id == this.onloadModel.activeExpenseReportId) {
+                  activeExpenseReport = this.onloadModel.expenseReports[i];
+                  break;
+                }
+              }
+            }
+
+            return activeExpenseReport;
+          },
+
+          getSpendTotal: function() {
+            let total = 0;
+
+            if (this.onloadModel && this.onloadModel.expensesByCategories && this.onloadModel.expensesByCategories.length) {
+              for (let i=0; i<this.onloadModel.expensesByCategories.length; i++) {
+                let expensesForCat = this.onloadModel.expensesByCategories[i].Expenses__r;
+
+                if (expensesForCat) {
+                  for (let j=0; j<expensesForCat.length; j++) {
+                    total += expensesForCat[j].Amount__c || 0;
+                  }
+                }
+              }
+            }
+
+            return total;
+          },
+
+          getTotalIncome: function() {
+            let total = 0;
+
+            if (this.onloadModel && this.onloadModel.incomes && this.onloadModel.incomes.length) {
+              for (let i=0; i<this.onloadModel.incomes.length; i++) {
+                total += this.onloadModel.incomes[i].Income__c || 0;
+              }
+            }
+
+            return total;
+          },
+
+          getTotalSpendGoal: function() {
+            let total = 0;
+
+            if (this.onloadModel && this.onloadModel.expensesByCategories && this.onloadModel.expensesByCategories.length) {
+              for (let i=0; i<this.onloadModel.expensesByCategories.length; i++) {
+                total += this.onloadModel.expensesByCategories[i].Budget__c || 0;
+              }
+            }
+
+            return total;
+          }
+        },
+
+
+
+        created: function() {
+          this.getOnloadModel()
+        }
+
+      }).mount('#app')
+    </script>
+
+    <style>
+
+      :root {
+        --page-width: 90%;
+        --table-font-color: #acb5bd;
+        --table-radius: 7px;
+        --table-header-bg-color: #2b3036;
+        --table-footer-bg-color: #1b1e21;
+      }
+
+      .primary-font-color {
+        color: var(--table-font-color);
+      }
+
+      /**
+       * 
+       * 
+       * Page Title
+       * 
+       * 
+       */
+      .page-title {
+        color: white;
+        width: var(--page-width);
+        text-align: center;
+        margin: 0 auto;
+        margin-top: 10px;
+        border: none;
+
+
+        -o-appearance: none !important;
+        -ms-appearance: none !important;
+        -webkit-appearance: none !important;
+        -moz-appearance: none !important;
+        appearance: none !important;
+      }
+
+
+
+      /**
+       * 
+       * 
+       * Expense Table
+       * 
+       * 
+       */
+      .expense-modal-header {
+        background-color: var(--table-header-bg-color);
+      }
+
+      .expenses-table {
+        table-layout: fixed;
+        width: var(--page-width);
+        --bs-table-color: var(--table-font-color);
+        margin-bottom: 30px;
+        margin-top: 50px;
+      }
+
+      .expenses-table thead tr th {
+        background-color: var(--table-header-bg-color);
+      }
+
+      /* Table Word Wrap */
+      .expenses-table th, .expenses-table td {
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+      }
+
+      /* Table Border Radius */
+      .expenses-table tr th:first-child {
+        border-top-left-radius: var(--table-radius);
+        border-bottom-left-radius: var(--table-radius);
+      }
+      .expenses-table tr th:last-child,
+      .expenses-table tr td:last-child {
+        border-top-right-radius: var(--table-radius);
+        border-bottom-right-radius: var(--table-radius);
+      }
+
+      /* Table Padding */
+      .expenses-table th:first-child {
+        padding-left: 10px;
+      }
+      .expenses-table th:last-child, .expenses-table td:last-child {
+        padding-right: 10px;
+      }
+      .expenses-table thead th {
+        padding-top: 10px;
+        padding-bottom: 10px;
+      }
+      .expenses-table tbody th {
+        padding-top: 4px;
+        padding-bottom: 4px;
+      }
+      .expenses-table tfoot th {
+        padding-top: 5px;
+        padding-bottom: 5px;
+      }
+
+      tbody:before, tbody:after {
+        content: "@";
+        display: block;
+        line-height: 1px;
+        text-indent: -99999px;
+      }
+
+      /* Table Font Sizes */
+      .expenses-table {
+        font-size: 12px;
+      }
+      .expenses-table tfoot {
+        font-size: 13px;
+        font-weight: 400;
+      }
+
+      /* Table footer background color */
+      .expenses-table tfoot th, .expenses-table tfoot td {
+        background-color: var(--table-footer-bg-color);
+      }
+
+
+      /**
+       * 
+       * 
+       * Totals Table
+       * 
+       * 
+       */
+      .totals-table {
+        table-layout: fixed;
+        width: 90%;
+        margin-bottom: 30px;
+        margin-top: 80px;
+        --bs-table-color: #dbdbdb;
+        font-weight: 300;
+        font-size: 13px;
+      }
+
+      .totals-table tbody td {
+        background-color: #0e1729 !important;
+      }
+
+      .totals-table .line-break-col {
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+
+      /* Border Radius */
+      .totals-table tr:first-child td:first-child {
+        border-top-left-radius: var(--table-radius);
+      }
+      .totals-table tr:first-child td:last-child {
+        border-top-right-radius: var(--table-radius);
+      }
+      .totals-table tr:last-child td:first-child {
+        border-bottom-left-radius: var(--table-radius);
+      }
+      .totals-table tr:last-child td:last-child {
+        border-bottom-right-radius: var(--table-radius);
+      }
+
+      /* Padding */
+      .totals-table td {
+        padding: 6px;
+      }
+      .totals-table tr td:first-child {
+        padding-left: 10px;
+      }
+      .totals-table tr td:last-child {
+        padding-right: 10px;
+      }
+
+      /* Expected/Actual Row Colors */
+      .actual-color {
+        color: #eb5758 !important;
+      }
+      .expected-color {
+        color: #21d085 !important;
+      }
+
+
+
+
+      /**
+       * 
+       * 
+       * View/Edit Expense Modal
+       * 
+       * 
+       */
+      .expense-modal-btn {
+        width: 50%;
+      }
+      .expense-modal-btn.left-btn {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+      }
+      .expense-modal-btn.right-btn {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+      }
+
+      .toggle-sign-btn {
+        background-color: #2b3035 !important;
+        border-color: var(--bs-border-color);
+        color: #376ea5;
+        box-shadow: none !important;
+        -webkit-appearance: none;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+
+        /* border: var(--bs-border-width) solid ; */
+      }
+
+      /* remove hover, focus, active styles */
+      .toggle-sign-btn:hover,
+      .toggle-sign-btn:focus,
+      .toggle-sign-btn:active,
+      .toggle-sign-btn:focus-visible {
+        background-color: #2b3035 !important;
+        color: #376ea5;
+        box-shadow: none !important;
+        outline: none !important;
+        border-color: var(--bs-border-color) !important;
+      }
+
+
+
+
+             /**
+        *
+        *
+       * Navigation Bar
+       * View/Edit Expense Modal
+        *
+        *
+        */
+      .navbar-custom {
+        background-color: #16171a !important;
+        padding-left: 6% !important;
+        padding-right: 3% !important;
+      }
+
+
+    </style>
+
+  </body>
+
+
+
+
+</apex:page>
