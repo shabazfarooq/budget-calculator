@@ -1,8 +1,8 @@
 # -------------------------
 # Salesforce DX / project files
 # -------------------------
-.sf/                        # Salesforce cache
-.sfdx/                      # Local scratch org data and tokens
+.sf/
+.sfdx/
 .localdevserver/
 deploy-options.json
 
@@ -21,7 +21,7 @@ yarn-error.log*
 
 # Dependency directories
 node_modules/
-package-lock.json            # Optional, if using npm
+package-lock.json
 
 # ApexPMD cache
 .pmdCache
@@ -31,8 +31,8 @@ package-lock.json            # Optional, if using npm
 
 # Local environment variables
 .env
-*.local                      # Local files not meant for repo
-*.tmp                        # Temporary files
+*.local
+*.tmp
 
 # -------------------------
 # IDE / editor files
