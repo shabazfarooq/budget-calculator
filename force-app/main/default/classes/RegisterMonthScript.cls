@@ -36,7 +36,7 @@ public with sharing class RegisterMonthScript {
         Name = 'Bills',
         Display_Order__c = 0,
         Expense_Report__c = er.Id,
-        Budget__c = 3780.80,
+        Budget__c = 3792.88,
         Fixed_Bill__c = true
     );
     insert bills;
@@ -50,14 +50,14 @@ public with sharing class RegisterMonthScript {
     ),
     new Expense__c(
         Name = 'Electric (Chase) (adjust)',
-        Datetime__c = DateTime.newInstance(year, month, 6, 6, 5, 0),
+        Datetime__c = DateTime.newInstance(year, month, 5, 6, 5, 0),
         Amount__c = 237.39,
         Category__c = bills.Id
     ),
     new Expense__c(
         Name = 'Water/Trash (Cap1) (adjust)',
         Datetime__c = DateTime.newInstance(year, month, 10, 6, 5, 0),
-        Amount__c = 155.00,
+        Amount__c = 155.18,
         Category__c = bills.Id
     ),
     new Expense__c(
@@ -68,8 +68,8 @@ public with sharing class RegisterMonthScript {
     ),
     new Expense__c(
         Name = 'Tmobile (Chase)',
-        Datetime__c = DateTime.newInstance(year, month, 12, 20, 22, 0),
-        Amount__c = 174.82,
+        Datetime__c = DateTime.newInstance(year, month, 10, 20, 22, 0),
+        Amount__c = 186.72,
         Category__c = bills.Id
     ),
     new Expense__c(
@@ -79,9 +79,21 @@ public with sharing class RegisterMonthScript {
         Category__c = bills.Id
     ),
     new Expense__c(
-        Name = 'Internet (Amex)',
+        Name = 'Att Internet (Amex)',
         Datetime__c = DateTime.newInstance(year, month, 18, 6, 5, 0),
         Amount__c = 90.78,
+        Category__c = bills.Id
+    ),
+    new Expense__c(
+        Name = 'Alta Pest Control ($44.38)',
+        Datetime__c = DateTime.newInstance(year, month, 24, 6, 5, 0),
+        Amount__c = 0,
+        Category__c = bills.Id
+    ),
+    new Expense__c(
+        Name = 'HOA (Clickpay) ($118.45)',
+        Datetime__c = DateTime.newInstance(year, month, 30, 6, 5, 0),
+        Amount__c = 0,
         Category__c = bills.Id
     )
   };
@@ -140,40 +152,53 @@ public with sharing class RegisterMonthScript {
         Name = 'Subscriptions',
         Display_Order__c = 2,
         Expense_Report__c = er.Id,
-        Budget__c = 84.56,
+        Budget__c = 131.34,
         Fixed_Bill__c = true
     );
     insert subscriptions;
     
     insert new List<Expense__c>{
         new Expense__c(
-            Name = 'iCloud Zara (Zara Amex)',
+            Name = 'iCloud (Amex)',
             Datetime__c = DateTime.newInstance(year, month, 4, 4, 5, 0),
             Amount__c = 9.99,
             Category__c = subscriptions.Id
         ),
         new Expense__c(
-            Name = 'YouTube (Zara Amex)',
+            Name = 'YouTube (Amex)',
             Datetime__c = DateTime.newInstance(year, month, 8, 6, 5, 0),
             Amount__c = 32.46,
             Category__c = subscriptions.Id
         ),
         new Expense__c(
-            Name = 'Hulu (Amex)',
-            Datetime__c = DateTime.newInstance(year, month, 16, 6, 5, 0),
-            Amount__c = 10.86,
-            Category__c = subscriptions.Id
-        ),
-        new Expense__c(
-            Name = 'Hulu Credit (Amex)',
-            Datetime__c = DateTime.newInstance(year, month, 17, 6, 5, 0),
-            Amount__c = -10,
-            Category__c = subscriptions.Id
-        ),
-        new Expense__c(
-            Name = 'Netflix (Free w/ Tmobile)',
-            Datetime__c = DateTime.newInstance(year, month, 18, 6, 5, 0),
+            Name = 'Hulu (0|18 w/ Tmobile)',
+            Datetime__c = DateTime.newInstance(year, month, 10, 6, 5, 0),
             Amount__c = 0,
+            Category__c = subscriptions.Id,
+            Fixed_Bill_Paid__c = true
+        ),
+        new Expense__c(
+            Name = 'Netflix (0|11 w/ Tmobile)',
+            Datetime__c = DateTime.newInstance(year, month, 10, 6, 5, 0),
+            Amount__c = 11,
+            Category__c = subscriptions.Id
+        ),
+        new Expense__c(
+            Name = 'YouTube Credit (Amex)',
+            Datetime__c = DateTime.newInstance(year, month, 17, 6, 5, 0),
+            Amount__c = -25,
+            Category__c = subscriptions.Id
+        ),
+        new Expense__c(
+            Name = 'Car Wash --DOWNGRADE THIS-- (Amex)',
+            Datetime__c = DateTime.newInstance(year, month, 26, 6, 5, 0),
+            Amount__c = 40,
+            Category__c = subscriptions.Id
+        ),
+        new Expense__c(
+            Name = 'ChatGPT (Amex)',
+            Datetime__c = DateTime.newInstance(year, month, 28, 6, 5, 0),
+            Amount__c = 21.64,
             Category__c = subscriptions.Id
         ),
         new Expense__c(
@@ -183,7 +208,6 @@ public with sharing class RegisterMonthScript {
             Category__c = subscriptions.Id
         )
     };
-
     
     // Cigarettes -- Create category and related expenses
     Category__c cigarettes = new Category__c(
@@ -192,17 +216,7 @@ public with sharing class RegisterMonthScript {
         Expense_Report__c = er.Id,
         Budget__c = 100
     );
-    insert cigarettes;
-    
-    // insert new List<Expense__c>{
-    //     new Expense__c(
-    //         Name = 'Ted tobacco',
-    //         Datetime__c = DateTime.newInstance(year, month, 26, 23, 4, 0),
-    //         Amount__c = 100,
-    //         Category__c = cigarettes.Id
-    //     )
-    // };
-
+    insert cigarettes;    
     
     // Gas -- Create category and related expenses
     Category__c gas = new Category__c(
