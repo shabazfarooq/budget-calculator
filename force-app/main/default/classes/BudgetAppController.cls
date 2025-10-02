@@ -75,7 +75,15 @@ public without sharing class BudgetAppController {
 
     // Locate active expense report
     List<Expense_Report__c> expenseReports = [
-      SELECT Id, Name, Start_Date__c, End_Date__c, Active_for_App__c, Hide_Income__c
+      SELECT 
+        Id,
+        Name,
+        Start_Date__c,
+        End_Date__c,
+        Active_for_App__c,
+        Hide_Income__c,
+        Is_Debt__c,
+        Debt_Pay_Off_Per_Month_Amount__c
       FROM Expense_Report__c 
       ORDER BY Start_Date__c DESC
     ];

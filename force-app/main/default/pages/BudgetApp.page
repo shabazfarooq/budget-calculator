@@ -233,7 +233,7 @@
           </tr>
         </tbody>
 
-        <tfoot>
+        <tfoot v-if="!isDebtExpenseReport">
           <tr v-if="category.Expenses__r">
             <th scope="row" colspan="2">Subtotal</th>
             <td class="text-end">{{ getCategorySubtotal(category) }}</td>
@@ -243,12 +243,21 @@
           </tr>
         </tfoot>
 
+        
+        <tfoot v-if="isDebtExpenseReport">
+          <tr>
+            <th scope="row" colspan="2">Amount Left</th>
+            <td class="text-end">{{ getDebtAmountLeft(category) }}</td>
+          </tr>
+        </tfoot>
+
       </table>
 
 
 
       <!-- Totals Table -->
-      <table class="table table-sm table-borderless table-hover caption-top mx-auto totals-table">
+      <table v-if="!isDebtExpenseReport"
+        class="table table-sm table-borderless table-hover caption-top mx-auto totals-table">
         <tbody class="align-middle">
           <!-- Income -->
           <tr v-if="!activeExpenseReport.Hide_Income__c">
@@ -284,6 +293,45 @@
           <tr v-if="!activeExpenseReport.Hide_Income__c" style="">
             <td class="expected-color">Expected Save</td>
             <td class="text-end expected-color">{{ getFormattedCurrency(expectedSaveThisMonth) }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+
+      <!-- Totals Table -->
+      <table v-if="isDebtExpenseReport"
+        class="table table-sm table-borderless table-hover caption-top mx-auto totals-table">
+        <tbody class="align-middle">
+          <!-- Original Debt Amount -->
+          <tr>
+            <td>Original Debt Amount</td>
+            <td class="text-end">{{ getFormattedCurrency(debt.originalAmount) }}</td>
+          </tr>
+      
+          <!-- Line Break -->
+          <tr>
+            <td colspan="2" class="line-break-col"><hr/></td>
+          </tr>
+      
+          <!-- Debt Amount Paid/Left -->
+           <tr>
+             <td class="expected-color">Amount Paid Off</td>
+             <td class="text-end expected-color">{{ getFormattedCurrency(debt.amountPaidOff) }}</td>
+           </tr>
+          <tr>
+            <td class="actual-color">Amount Left</td>
+            <td class="text-end actual-color">{{ getFormattedCurrency(debt.amountLeft) }}</td>
+          </tr>
+
+          <!-- Line Break -->
+          <tr>
+            <td colspan="2" class="line-break-col"><hr/></td>
+          </tr>
+          
+          <!-- Debt Amount Paid/Left -->
+          <tr>
+            <td>Time left @ {{ getFormattedCurrency(debt.amountPaidPerMonth) }}</td>
+            <td class="text-end">{{ debt.monthsToGo }} months</td>
           </tr>
         </tbody>
       </table>
@@ -535,6 +583,14 @@
             expectedSaveThisMonth: 0,
             totalSpendGoal: 0,
             activeExpenseReport: null,
+            isDebtExpenseReport: false,
+            debt: { 
+              originalAmount: 0,
+              amountPaidOff: 0,
+              amountLeft: 0,
+              monthsToGo: 0,
+              amountPaidPerMonth: 100
+            },
             expenseModal: {
               title: 'Add new expense',
               submitBtnText: 'Save',
@@ -838,6 +894,20 @@
             return this.getFormattedCurrency(total);
           },
 
+          getDebtAmountLeft: function(category) {
+            let total = 0;
+
+            if (category.Expenses__r) {
+              for (let i=0; i<category.Expenses__r.length; i++) {
+                total += category.Expenses__r[i].Amount__c || 0;
+              }
+            }
+
+            let amountLeft = ((category.Budget__c ?? 0)) - total;
+
+            return this.getFormattedCurrency(amountLeft);
+          },
+
           getTitleStyle: function(rowIndex) {
             
             let values = [
@@ -859,6 +929,21 @@
             this.totalSpendGoal = this.getTotalSpendGoal();
             this.expectedSaveThisMonth = this.totalIncome - this.totalSpendGoal;
             this.activeExpenseReport = this.getActiveExpenseReport();
+            this.isDebtExpenseReport = this.activeExpenseReport.Is_Debt__c;
+
+            // If debt
+            if (this.isDebtExpenseReport) {
+              this.debt.amountPaidPerMonth = this.activeExpenseReport.Debt_Pay_Off_Per_Month_Amount__c == null
+                ? 100
+                : this.activeExpenseReport.Debt_Pay_Off_Per_Month_Amount__c;
+              
+              this.debt.originalAmount = this.totalSpendGoal;
+              this.debt.amountPaidOff = this.spendTotal;
+              this.debt.amountLeft = this.debt.originalAmount - this.spendTotal;
+
+              let monthsToGo = this.debt.amountLeft / this.debt.amountPaidPerMonth;
+              this.debt.monthsToGo = Math.max(0, monthsToGo).toFixed(2);
+            }
           },
 
           getActiveExpenseReport: function() {
