@@ -36,7 +36,7 @@ public with sharing class RegisterMonthScript {
         Name = 'Bills',
         Display_Order__c = 0,
         Expense_Report__c = er.Id,
-        Budget__c = 3792.88,
+        Budget__c = 3707.82,
         Fixed_Bill__c = true
     );
     insert bills;
@@ -49,20 +49,14 @@ public with sharing class RegisterMonthScript {
         Category__c = bills.Id
     ),
     new Expense__c(
+        Name = 'Parents Grass (Chase) (adjust)',
+        Datetime__c = DateTime.newInstance(year, month, 1, 6, 5, 0),
+        Amount__c = 200,
+        Category__c = bills.Id
+    ),
+    new Expense__c(
         Name = 'Electric (Chase) (adjust)',
         Datetime__c = DateTime.newInstance(year, month, 5, 6, 5, 0),
-        Amount__c = 237.39,
-        Category__c = bills.Id
-    ),
-    new Expense__c(
-        Name = 'Water/Trash (Cap1) (adjust)',
-        Datetime__c = DateTime.newInstance(year, month, 10, 6, 5, 0),
-        Amount__c = 155.18,
-        Category__c = bills.Id
-    ),
-    new Expense__c(
-        Name = 'Parents Grass (Chase)',
-        Datetime__c = DateTime.newInstance(year, month, 11, 6, 5, 0),
         Amount__c = 200,
         Category__c = bills.Id
     ),
@@ -73,19 +67,25 @@ public with sharing class RegisterMonthScript {
         Category__c = bills.Id
     ),
     new Expense__c(
+        Name = 'Water/Trash (Cap1) (adjust)',
+        Datetime__c = DateTime.newInstance(year, month, 15, 6, 5, 0),
+        Amount__c = 110,
+        Category__c = bills.Id
+    ),
+    new Expense__c(
         Name = 'Car Insurance (Cap1)',
         Datetime__c = DateTime.newInstance(year, month, 16, 6, 5, 0),
-        Amount__c = 176.71,
+        Amount__c = 170.62,
         Category__c = bills.Id
     ),
     new Expense__c(
         Name = 'Att Internet (Amex)',
-        Datetime__c = DateTime.newInstance(year, month, 18, 6, 5, 0),
+        Datetime__c = DateTime.newInstance(year, month, 17, 6, 5, 0),
         Amount__c = 90.78,
         Category__c = bills.Id
     ),
     new Expense__c(
-        Name = 'Alta Pest Control ($44.38)',
+        Name = 'Alta Pest Control',
         Datetime__c = DateTime.newInstance(year, month, 24, 6, 5, 0),
         Amount__c = 0,
         Category__c = bills.Id
@@ -103,7 +103,7 @@ public with sharing class RegisterMonthScript {
         Name = 'Debt',
         Display_Order__c = 1,
         Expense_Report__c = er.Id,
-        Budget__c = 1764.41,
+        Budget__c = 1464.41,
         Fixed_Bill__c = true
     );
     insert debt;
@@ -134,12 +134,6 @@ public with sharing class RegisterMonthScript {
             Category__c = debt.Id
         ),
         new Expense__c(
-            Name = 'Zara - Private (Chase)',
-            Datetime__c = DateTime.newInstance(year, month, 23, 6, 5, 0),
-            Amount__c = 300,
-            Category__c = debt.Id
-        ),
-        new Expense__c(
             Name = 'Shabaz - (Aidvantage) (Chase)',
             Datetime__c = DateTime.newInstance(year, month, 27, 6, 5, 0),
             Amount__c = 215.01,
@@ -152,7 +146,7 @@ public with sharing class RegisterMonthScript {
         Name = 'Subscriptions',
         Display_Order__c = 2,
         Expense_Report__c = er.Id,
-        Budget__c = 131.34,
+        Budget__c = 72.61,
         Fixed_Bill__c = true
     );
     insert subscriptions;
@@ -166,16 +160,15 @@ public with sharing class RegisterMonthScript {
         ),
         new Expense__c(
             Name = 'YouTube (Amex)',
-            Datetime__c = DateTime.newInstance(year, month, 8, 6, 5, 0),
-            Amount__c = 32.46,
+            Datetime__c = DateTime.newInstance(year, month, 4, 6, 5, 0),
+            Amount__c = 22.99,
             Category__c = subscriptions.Id
         ),
         new Expense__c(
-            Name = 'Hulu (0|18 w/ Tmobile)',
-            Datetime__c = DateTime.newInstance(year, month, 10, 6, 5, 0),
-            Amount__c = 0,
-            Category__c = subscriptions.Id,
-            Fixed_Bill_Paid__c = true
+            Name = 'YouTube Credit (Amex)',
+            Datetime__c = DateTime.newInstance(year, month, 9, 7, 5, 0),
+            Amount__c = -25,
+            Category__c = subscriptions.Id
         ),
         new Expense__c(
             Name = 'Netflix (0|11 w/ Tmobile)',
@@ -184,27 +177,21 @@ public with sharing class RegisterMonthScript {
             Category__c = subscriptions.Id
         ),
         new Expense__c(
-            Name = 'YouTube Credit (Amex)',
-            Datetime__c = DateTime.newInstance(year, month, 17, 6, 5, 0),
-            Amount__c = -25,
+            Name = 'Hulu (0|18 w/ Tmobile)',
+            Datetime__c = DateTime.newInstance(year, month, 10, 6, 5, 0),
+            Amount__c = 0,
             Category__c = subscriptions.Id
         ),
         new Expense__c(
-            Name = 'Car Wash --DOWNGRADE THIS-- (Amex)',
-            Datetime__c = DateTime.newInstance(year, month, 26, 6, 5, 0),
-            Amount__c = 40,
+            Name = 'Car Wash (Amex)',
+            Datetime__c = DateTime.newInstance(year, month, 19, 6, 5, 0),
+            Amount__c = 30,
             Category__c = subscriptions.Id
         ),
         new Expense__c(
             Name = 'ChatGPT (Amex)',
             Datetime__c = DateTime.newInstance(year, month, 28, 6, 5, 0),
             Amount__c = 21.64,
-            Category__c = subscriptions.Id
-        ),
-        new Expense__c(
-            Name = '2-10 Home Buyers (Amex)',
-            Datetime__c = DateTime.newInstance(year, month, 29, 6, 5, 0),
-            Amount__c = 41.25,
             Category__c = subscriptions.Id
         )
     };
@@ -223,7 +210,7 @@ public with sharing class RegisterMonthScript {
         Name = 'Gas',
         Display_Order__c = 4,
         Expense_Report__c = er.Id,
-        Budget__c = 300
+        Budget__c = 250
     );
     insert gas;
     
@@ -232,7 +219,7 @@ public with sharing class RegisterMonthScript {
         Name = 'Tolls',
         Display_Order__c = 5,
         Expense_Report__c = er.Id,
-        Budget__c = 200
+        Budget__c = 100
     );
     insert tolls;
     
@@ -250,7 +237,7 @@ public with sharing class RegisterMonthScript {
         Name = 'Fun Money',
         Display_Order__c = 7,
         Expense_Report__c = er.Id,
-        Budget__c = 500
+        Budget__c = 1000
     );
     insert funMoney;
     
@@ -259,7 +246,7 @@ public with sharing class RegisterMonthScript {
         Name = 'Medical',
         Display_Order__c = 8,
         Expense_Report__c = er.Id,
-        Budget__c = 75
+        Budget__c = 100
     );
     insert medical;
     
@@ -268,7 +255,7 @@ public with sharing class RegisterMonthScript {
         Name = 'Donation',
         Display_Order__c = 9,
         Expense_Report__c = er.Id,
-        Budget__c = 116.9,
+        Budget__c = 300,
         Fixed_Bill__c = true
     );
     insert donation;
@@ -293,7 +280,7 @@ public with sharing class RegisterMonthScript {
         Name = 'Cat',
         Display_Order__c = 10,
         Expense_Report__c = er.Id,
-        Budget__c = 500
+        Budget__c = 350
     );
     insert cat;
     
@@ -302,7 +289,7 @@ public with sharing class RegisterMonthScript {
         Name = 'Unexpected',
         Display_Order__c = 11,
         Expense_Report__c = er.Id,
-        Budget__c = 0
+        Budget__c = 500
     );
     insert unexpected;
     
@@ -311,17 +298,17 @@ public with sharing class RegisterMonthScript {
         Name = 'Additional Income',
         Display_Order__c = 12,
         Expense_Report__c = er.Id,
-        Budget__c = -50
+        Budget__c = 0
     );
     insert AdditionalIncome;
     
-    insert new List<Expense__c>{
-        new Expense__c(
-            Name = 'Internet',
-            Datetime__c = DateTime.newInstance(year, month, 1, 2, 16, 0),
-            Amount__c = -50,
-            Category__c = AdditionalIncome.Id
-        )
-    };
+    // insert new List<Expense__c>{
+    //     new Expense__c(
+    //         Name = 'Internet',
+    //         Datetime__c = DateTime.newInstance(year, month, 1, 2, 16, 0),
+    //         Amount__c = -50,
+    //         Category__c = AdditionalIncome.Id
+    //     )
+    // };
   }
 }
