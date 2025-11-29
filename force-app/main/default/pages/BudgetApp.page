@@ -193,65 +193,69 @@
       EXPENSES TABLE
       
       -->
-      <table v-for="(category, categoryIndex) in onloadModel.expensesByCategories"
-          class="table table-sm table-borderless table-hover caption-top mx-auto expenses-table">
-        <caption>
-          <button type="button"
-              class="btn btn-dark float-end align-bottom"
-              v-on:click="newExpenseOnclick(category.Id)"
-              data-bs-toggle="modal"
-              data-bs-target="#expenseModal">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">
-              <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"/>
-            </svg>
-          </button>
-        </caption>
-        <thead>
-          <tr data-bs-toggle="modal"
-              data-bs-target="#categoryModal"
-              v-on:click="editCategoryOnclick(category)">
-            <th scope="col" style="width: 51%;" v-bind:style="{color: getTitleStyle(categoryIndex)}">{{ category.Name }}</th>
-            <th scope="col" style="width: 23%">Date</th>
-            <th scope="col" style="width: 26%" class="text-end">{{ getFormattedCurrency(category.Budget__c) }}</th>
-          </tr>
-        </thead>
+      <div class="position-relative my-3" v-for="(category, categoryIndex) in onloadModel.expensesByCategories">
+        <table class="table table-sm table-borderless table-hover caption-top mx-auto expenses-table">
+          <caption>
+            <button type="button"
+                class="btn btn-dark float-end align-bottom"
+                v-on:click="newExpenseOnclick(category.Id)"
+                data-bs-toggle="modal"
+                data-bs-target="#expenseModal">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"/>
+              </svg>
+            </button>
+          </caption>
+          <thead>
+            <tr data-bs-toggle="modal"
+                data-bs-target="#categoryModal"
+                v-on:click="editCategoryOnclick(category)">
+              <th scope="col" style="width: 51%;" v-bind:style="{color: getTitleStyle(categoryIndex)}">{{ category.Name }}</th>
+              <th scope="col" style="width: 23%">Date</th>
+              <th scope="col" style="width: 26%" class="text-end">{{ getFormattedCurrency(category.Budget__c) }}</th>
+            </tr>
+          </thead>
 
-        <tbody class="align-middle">
-          <tr v-for="expense in category.Expenses__r" 
-              data-bs-toggle="modal"
-              data-bs-target="#expenseModal"
-              v-on:click="viewExpenseOnclick(expense)">
-            <th scope="row">
-              <span v-if="expense.Category__r.Fixed_Bill__c">
-                <i class="bi bi-check-square-fill text-success" v-if="expense.Fixed_Bill_Paid__c"></i>
-                <i class="bi bi-x-square-fill text-danger" v-if="!expense.Fixed_Bill_Paid__c"></i>
-              </span>
-              {{ expense.Name }}
-            </th>
-            <td>{{ getFormattedDatetime(expense.Datetime__c) }}</td>
-            <td class="text-end">{{ getFormattedCurrency(expense.Amount__c) }}</td>
-          </tr>
-        </tbody>
+          <tbody class="align-middle">
+            <tr v-for="expense in category.Expenses__r" 
+                data-bs-toggle="modal"
+                data-bs-target="#expenseModal"
+                v-on:click="viewExpenseOnclick(expense)">
+              <th scope="row">
+                <span v-if="expense.Category__r.Fixed_Bill__c">
+                  <i class="bi bi-check-square-fill text-success" v-if="expense.Fixed_Bill_Paid__c"></i>
+                  <i class="bi bi-x-square-fill text-danger" v-if="!expense.Fixed_Bill_Paid__c"></i>
+                </span>
+                {{ expense.Name }}
+              </th>
+              <td>{{ getFormattedDatetime(expense.Datetime__c) }}</td>
+              <td class="text-end">{{ getFormattedCurrency(expense.Amount__c) }}</td>
+            </tr>
+          </tbody>
 
-        <tfoot v-if="!isDebtExpenseReport">
-          <tr v-if="category.Expenses__r">
-            <th scope="row" colspan="2">Subtotal</th>
-            <td class="text-end">{{ getCategorySubtotal(category) }}</td>
-          </tr>
-          <tr v-else="category.Expenses__r">
-            <th scope="row" colspan="3" style="background-color: inherit; font-weight: 100;">No expenses yet...</th>
-          </tr>
-        </tfoot>
+          <tfoot v-if="!isDebtExpenseReport">
+            <tr v-if="category.Expenses__r">
+              <th scope="row" colspan="2">Subtotal</th>
+              <td class="text-end">{{ getCategorySubtotal(category) }}</td>
+            </tr>
+            <tr v-else="category.Expenses__r">
+              <th scope="row" colspan="3" style="background-color: inherit; font-weight: 100;">No expenses yet...</th>
+            </tr>
+          </tfoot>
 
+          
+          <tfoot v-if="isDebtExpenseReport">
+            <tr>
+              <th scope="row" colspan="2">Amount Left</th>
+              <td class="text-end">{{ getDebtAmountLeftFormatted(category) }}</td>
+            </tr>
+          </tfoot>
+
+        </table>
         
-        <tfoot v-if="isDebtExpenseReport">
-          <tr>
-            <th scope="row" colspan="2">Amount Left</th>
-            <td class="text-end">{{ getDebtAmountLeft(category) }}</td>
-          </tr>
-        </tfoot>
+        <div v-if="isDebtExpenseReport && getDebtPaidOff(category)" class="debt-paid-overlay"></div>
+      </div>
 
-      </table>
 
 
 
@@ -903,9 +907,19 @@
               }
             }
 
-            let amountLeft = ((category.Budget__c ?? 0)) - total;
+            let amountLeft = ((category.Budget__c ?? 0)) - total.toFixed(10);
 
-            return this.getFormattedCurrency(amountLeft);
+            return amountLeft;
+          },
+          
+          getDebtAmountLeftFormatted: function(category) {
+            let amountLeft = this.getDebtAmountLeft(category);
+            let formatted = this.getFormattedCurrency(amountLeft);
+            return formatted;
+          },
+
+          getDebtPaidOff: function(category) {
+            return this.getDebtAmountLeft(category) === 0;
           },
 
           getTitleStyle: function(rowIndex) {
@@ -1137,6 +1151,19 @@
         background-color: var(--table-footer-bg-color);
       }
 
+      .debt-paid-overlay {
+        position: absolute;
+        top: 54px;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: var(--page-width);
+        background-color: var(--bs-success);
+        opacity: 0.15;
+        border-radius: var(--table-radius);
+        pointer-events: none;
+      }
+
 
       /**
        * 
@@ -1246,11 +1273,11 @@
 
 
 
-             /**
+      /**
         *
         *
-       * Navigation Bar
-       * View/Edit Expense Modal
+        * Navigation Bar
+        * View/Edit Expense Modal
         *
         *
         */
@@ -1259,8 +1286,6 @@
         padding-left: 6% !important;
         padding-right: 3% !important;
       }
-
-
     </style>
 
   </body>
